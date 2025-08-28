@@ -1,12 +1,15 @@
+// src/NewPostPage.js
 import React, { useState } from 'react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
+import { useAuth } from './contexts/AuthContext';
 import PostTypeSelector from './PostTypeSelector';
 import QuestionForm from './QuestionForm';
 import ArticleForm from './ArticleForm';
 import ImageUpload from './ImageUpload';
 
 const NewPostPage = () => {
+  const { currentUser, userProfile } = useAuth();
   const [postType, setPostType] = useState('question');
   const [formData, setFormData] = useState({
     title: '',
@@ -78,9 +81,26 @@ const NewPostPage = () => {
     }
   };
 
+  const getUserDisplayName = () => {
+    if (userProfile?.displayName) return userProfile.displayName;
+    if (currentUser?.displayName) return currentUser.displayName;
+    if (currentUser?.email) return currentUser.email.split('@')[0];
+    return 'Anonymous User';
+  };
+
   const handlePost = async () => {
     if (!formData.title.trim()) {
       setErrorMessage('Please enter a title');
+      return;
+    }
+
+    if (postType === 'question' && !formData.description.trim()) {
+      setErrorMessage('Please enter a description for your question');
+      return;
+    }
+
+    if (postType === 'article' && !formData.articleText.trim()) {
+      setErrorMessage('Please enter article content');
       return;
     }
 
@@ -99,7 +119,16 @@ const NewPostPage = () => {
         title: formData.title,
         tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
         createdAt: serverTimestamp(),
-        imageUrl: imageUrl || null
+        imageUrl: imageUrl || null,
+        // User information
+        userId: currentUser.uid,
+        authorName: getUserDisplayName(),
+        authorEmail: currentUser.email,
+        authorPhoto: currentUser.photoURL || null,
+        // Post metrics
+        views: 0,
+        likes: 0,
+        comments: 0
       };
 
       if (postType === 'question') {
@@ -111,6 +140,8 @@ const NewPostPage = () => {
 
       const docRef = await addDoc(collection(db, 'posts'), postData);
       alert(`${postType.charAt(0).toUpperCase() + postType.slice(1)} posted successfully!`);
+      
+      // Reset form
       setFormData({
         title: '',
         description: '',
@@ -131,10 +162,17 @@ const NewPostPage = () => {
       <div className="row justify-content-center">
         <div className="col-md-8">
           <div className="mb-4">
-            <h2 className="text-left mb-4">New Post</h2>
+            <div className="d-flex align-items-center mb-4">
+              <h2 className="mb-0 me-3">New Post</h2>
+              <div className="d-flex align-items-center text-muted">
+                <i className="bi bi-person-circle me-2"></i>
+                <span>Posting as: <strong>{getUserDisplayName()}</strong></span>
+              </div>
+            </div>
             
             {errorMessage && (
               <div className="alert alert-danger" role="alert">
+                <i className="bi bi-exclamation-triangle me-2"></i>
                 {errorMessage}
               </div>
             )}
@@ -165,11 +203,21 @@ const NewPostPage = () => {
             <div className="text-center mt-4">
               <button 
                 type="button" 
-                className="btn btn-primary btn-lg"
+                className="btn btn-primary btn-lg px-4"
                 onClick={handlePost}
                 disabled={isLoading}
               >
-                {isLoading ? 'Posting...' : 'Post'}
+                {isLoading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Posting...
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-send me-2"></i>
+                    Post {postType.charAt(0).toUpperCase() + postType.slice(1)}
+                  </>
+                )}
               </button>
             </div>
           </div>

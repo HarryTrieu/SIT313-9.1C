@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc, where } from 'firebase/firestore';
 import { db } from './firebase';
+import logger from './utils/logger';
 import QuestionCard from './QuestionCard';
 import FilterControls from './FilterControls';
 
@@ -33,7 +34,7 @@ const FindQuestionPage = () => {
       setQuestions(questionsData);
       setLoading(false);
     }, (error) => {
-      console.error('Error fetching questions:', error);
+            logger.error('Error fetching questions:', error);
       setLoading(false);
     });
 
@@ -162,3 +163,11 @@ const FindQuestionPage = () => {
 };
 
 export default FindQuestionPage;
+
+
+
+
+
+
+
+
