@@ -138,7 +138,7 @@ const NewPostPage = () => {
         postData.articleText = formData.articleText;
       }
 
-      const docRef = await addDoc(collection(db, 'posts'), postData);
+  await addDoc(collection(db, 'posts'), postData);
       alert(`${postType.charAt(0).toUpperCase() + postType.slice(1)} posted successfully!`);
       
       // Reset form
